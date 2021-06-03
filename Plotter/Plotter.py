@@ -967,13 +967,14 @@ def measureTimingAuto(path):
 
 
 if __name__ == '__main__':
-    #TODO titledict only works if titles are keys are unique for every path
-    data = np.array([1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000])*10/13000
-
+	 """
+	 Run main to reevaluate data. When added data always run evaluate(curr_path) before data = readValuesFromTxtAuto(path=curr_path) and
+    plotMeasurementsWithUncertainty(data=data).
+	 """
     titledict = {}
 
     curr_path = os.path.dirname(__file__)   #returns the current path of the python skript
-    curr_path = os.path.dirname(curr_path) + "/BA"  # ".."
+    curr_path = os.path.dirname(curr_path)  # ".." Path to all the measurements
     #curr_path = curr_path + "/22042021TRSwitchCoilToRx"
     #Autoplot(curr_path, titledict = titledict)
     #measureFreqAuto(path=curr_path)
