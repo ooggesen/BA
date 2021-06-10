@@ -728,8 +728,8 @@ def plotMeasurementsWithUncertainty(data, lastKey=""):
                             tmp = data[key][c]
                         except:
                             continue
-                        tmp[0] = tmp[0] * 1e6 - 4000  # Standart width is 4ms for gradients
-                        tmp[1] = tmp[1] * 1e6
+                        tmp[0] = (tmp[0] * 1e6 - 4000)   # Standart width is 4ms for gradients
+                        tmp[1] = (tmp[1] * 1e6)
                         tpl.append(tmp)
                     try:
                         widthChannel1Curr.append(tpl[0])
@@ -760,8 +760,8 @@ def plotMeasurementsWithUncertainty(data, lastKey=""):
                         tmp[i] = t*1e-3
                 durFreqChannel1.append(tmp)
                 tmp = data[key]["widthChannel1.txt"]
-                tmp[0] = tmp[0]*1e6 - dur
-                tmp[1] = tmp[1]*1e6
+                tmp[0] = (tmp[0]*1e6 - dur)
+                tmp[1] = (tmp[1]*1e6)/dur 
                 widthChannel1dur.append(tmp)
             elif "dB" in key:
                 if "27052021RFAmplifier" == lastKey:
@@ -967,10 +967,10 @@ def measureTimingAuto(path):
 
 
 if __name__ == '__main__':
-	 """
-	 Run main to reevaluate data. When added data always run evaluate(curr_path) before data = readValuesFromTxtAuto(path=curr_path) and
+    """
+    Run main to reevaluate data. When added data always run evaluate(curr_path) before data = readValuesFromTxtAuto(path=curr_path) and
     plotMeasurementsWithUncertainty(data=data).
-	 """
+    """
     titledict = {}
 
     curr_path = os.path.dirname(__file__)   #returns the current path of the python skript
@@ -996,20 +996,20 @@ if __name__ == '__main__':
     #path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/NeueMessungenAbRFAmp/27052021TRSwitch/amplitude251.95mV/RefCurve_2021-05-27_0_140507"
     #Plotter(paths=[path], title ="TR Switch Output", save=save, multiply=[10**(30/20)], labelarray=["RF Pulse"])
 
-    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/22042021RPOCRABased/RefCurve_2021-04-22_0_143403"
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/22042021RPOCRABased/RefCurve_2021-04-22_0_143403"
     #Plotter(paths=[path], title="RP Ocra based Output", save=save, labelarray=["RF Pulse"])
 
-    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/23032021PulseqRP/te12ms/RefCurve_2021-03-23_0_134215"
+    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/23032021PulseqRP/te12ms/RefCurve_2021-03-23_0_134215"
     #Plotter(paths=[path], title="RP PulSeq based Output", save=save, labelarray=["RF Pulse"])
 
-    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/19052021GPAFHDO/Channel1/te12ms/RefCurve_2021-05-19_0_152231"
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/19052021GPAFHDO/Channel1/te12ms/RefCurve_2021-05-19_0_152231"
     #Plotter(paths=[path], title="Scanner Output Timing TE 12", save=save, labelarray=["RF Pulse", "Gradient Pulse"])
 
-    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/19052021GPAFHDO/Channel1/te6ms/RefCurve_2021-05-19_0_155239"
+    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/19052021GPAFHDO/Channel1/te6ms/RefCurve_2021-05-19_0_155239"
     #Plotter(paths=[path], title="Scanner Output Timing TE 6", save=save, labelarray=["RF Pulse", "Gradient Pulse"])
 
     freqLim = (0, 6e+6)
-    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
+    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
     #FFTPlot(path=path, title="FFT spike gate pulse", xlim=(-0.02e-3,0.04e-3), save=save, freqLim=freqLim)
 
 
