@@ -176,7 +176,17 @@ def Plotter(paths, title, save=False, labelarray = None, xlim = None, extraData 
         assert len(xarray) != 0 and len(yarray) != 0
     except:
         raise AssertionError("This file in contains no information. An empty list was created.")
-    ylim = (np.min(yarray[0])*1.1, np.max(yarray[0])*1.1)
+
+    max = 0.0
+    min = 0.0
+    for i in range(len(yarray)):
+        if max < np.max(yarray[i]):
+            max = np.max(yarray[i])
+            maxi = i
+        if min > np.min(yarray[i]):
+            min = np.min(yarray[i])
+            mini = i
+    ylim = (np.min(yarray[mini]) * 1.1, np.max(yarray[maxi]) * 1.1)
 
 
     plot(xarray, yarray, title, xlabel, "voltage in V", save, labelarray=labelarray, xlim=xlim, savePath=os.path.dirname(path), ylim=ylim)
@@ -318,29 +328,45 @@ def measureFreq(path, xlim=None, freqLim = None):
             d, t, step = RectWindow(dataElem=d, xlim=xlim, status=status)
         else:
             step = (status["HardwareXStop"] - status["HardwareXStart"]) / len(d)
+        d90 = d[0:int(len(d) / 2)]
         T0 = step * len(d)
+        T090 = step * len(d90)
         T0min = 1/20    #Defines the sampling rate in the frequency domain: fs = 1/T=min TODO set bigger value if final run
-        if T0min > T0:
-            d.extend(np.zeros(int(T0min / step) - int(T0 / step)))      #Zero padding
+        if T0min > T0 or T0min > T090:
+            d.extend(np.zeros(int(T0min / step) - int(T0 / step)))  #Zero padding
+            d90.extend(np.zeros(int(T0min / step) - int(T090 / step)))
+
         mag, freq = FFT(data=d, step=step)
+        d = None
+        mag90, freq90 = FFT(data=d90, step=step)
+        d90 = None
         freq = freq[0:int(len(freq)/2)]
+        freq90 = freq[0:int(len(freq90)/2)]
         if freqLim is None:
             freqLim = (3e6, 5e6)
         idx_start = binarySearch(freq, freqLim[0])
         idx_stop = binarySearch(freq, freqLim[1])
-
-        m_max = 0.0
-        f_max = 0.0
-        for f, m in zip(freq[idx_start:idx_stop], mag[idx_start:idx_stop]):
-            if m>m_max:
-                f_max = f
-                m_max = m
-
+        idx_start90 = binarySearch(freq90, freqLim[0])
+        idx_stop90 = binarySearch(freq90, freqLim[1])
+        f_max = findFMax(freq, mag, idx_start, idx_stop)
+        f_max90 = findFMax(freq90, mag90, idx_start90, idx_stop90)
 
 
         file_path = os.path.dirname(path)
         with open(file_path + "/freqChannel{}.txt".format(i+1), "a") as file:
             file.write("{}\n".format(f_max))
+        with open(file_path + "/90degFreqChannel{}.txt".format(i+1), "a") as file:
+            file.write("{}\n".format(f_max90))
+
+def findFMax(freq, mag, idx_start, idx_stop):
+    m_max = 0.0
+    f_max = 0.0
+    for f, m in zip(freq[idx_start:idx_stop], mag[idx_start:idx_stop]):
+        if m > m_max:
+            f_max = f
+            m_max = m
+    return f_max
+
 
 def measureFreqAuto(path, xlim = None):
     """Measures the dominant frequency in the data stored in path address and saves it to a .txt file. Only frequencies between 3MhZ and 5 MhZ are evaluated.
@@ -352,8 +378,11 @@ def measureFreqAuto(path, xlim = None):
         path = os.path.dirname(path)
         for i in range(2):
             data = path + "/freqChannel{}.txt".format(i + 1)
+            data2 = path +"/90degFreqChannel{}.txt".format(i+1)
             if os.path.exists(data):
                 os.remove(data)
+            if os.path.exists(data2):
+                os.remove(data2)
     for path in paths:
         if xlim is not None:
             measureFreq(path=path, xlim = xlim)
@@ -368,14 +397,19 @@ def measureFreqAuto(path, xlim = None):
             new_paths.append(path)
             for i in range(2):
                 data_path = path + "/freqChannel{}.txt".format(i+1)
+                data_path90 = path + "/90degFreqChannel{}.txt".format(i + 1)
                 if os.path.exists(data_path):
                     mean, u = calcUncerFromFile(data_path)
-                    if u is None:
+                    mean90, u90 = calcUncerFromFile(data_path90)
+                    if u is None or u90 is None:
                         pass
                     else:
                         with open(data_path, "a")as file:
                             file.write("\n")
                             file.write("{} +- {}".format(mean, u))
+                        with open(data_path90, "a")as file:
+                            file.write("\n")
+                            file.write("{} +- {}".format(mean90, u90))
 
 def calcUncerFromFile(path):
     """
@@ -752,7 +786,7 @@ def plotMeasurementsWithUncertainty(data, lastKey=""):
                 rf90duration = key.replace("rf90duration", "")
                 dur = float(rf90duration.replace("us", ""))
                 rf90durationList.append(dur)
-                tmp = data[key]["freqChannel1.txt"]
+                tmp = data[key]["90degFreqChannel1.txt"]
                 for i, t in enumerate(tmp):
                     if i == 0:
                         tmp[i] = t*1e-3 - flarmor*1e3
@@ -948,23 +982,12 @@ def measureTimingAuto(path):
                             file.write("{} +- {}".format(mean, u))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def ideal(TE, step, rf90duration, offset):
+    ideal = np.concatenate((np.zeros(int(3e-3 / step)), np.ones(int(rf90duration / step)),
+                            np.zeros(int((TE / 2 - 1.5 * rf90duration) / step)), np.ones(int(2 * rf90duration / step)),
+                            np.zeros(int(6e-3 / step))))
+    x = np.linspace(-3e-3 + offset, len(ideal) * step - 3e-3 + offset, len(ideal))
+    return [x, ideal]
 
 if __name__ == '__main__':
     """
@@ -986,32 +1009,50 @@ if __name__ == '__main__':
 
     save = False
 
+
     freqLim = (0e6, 1e6)
-    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
     xlim = None # (0.0, 0.00003)
     
     #Plotter(paths=[path], title ="RF Amplifier With Gate Pulse", save=save, xlim=xlim, multiply=[10**(30/20), 1], labelarray=["RF Pulse", "Gate Pulse"])
     #FFTPlot(path=path, xlim=xlim, save=save, freqLim=freqLim)
 
-    #path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/NeueMessungenAbRFAmp/27052021TRSwitch/amplitude251.95mV/RefCurve_2021-05-27_0_140507"
-    #Plotter(paths=[path], title ="TR Switch Output", save=save, multiply=[10**(30/20)], labelarray=["RF Pulse"])
+    step = 2e-6
+    rf90duration = 80e-6
+    TE = 12e-3
+    offset = 0.495e-3
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/NeueMessungenAbRFAmp/27052021TRSwitch/amplitude251.95mV/RefCurve_2021-05-27_0_140507"
+    #Plotter(paths=[path], title ="TR Switch Output", save=save, multiply=[10**(30/20), 7.967358564794], labelarray=["Output \nTR Switch", "ideal"], extraData=ideal(TE=TE, step=step, rf90duration=rf90duration, offset=offset))
 
-    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/22042021RPOCRABased/RefCurve_2021-04-22_0_143403"
-    #Plotter(paths=[path], title="RP Ocra based Output", save=save, labelarray=["RF Pulse"])
+    offset=0.0
+    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/23032021PulseqRP/te12ms/RefCurve_2021-03-23_0_134215"
+    #Plotter(paths=[path], title="RP PulSeq based Output", save=save, labelarray=["Output RP", "ideal"], extraData=ideal(TE=TE, step=step, rf90duration=rf90duration, offset=offset), multiply=(1, 312.5e-3))
 
-    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/23032021PulseqRP/te12ms/RefCurve_2021-03-23_0_134215"
-    #Plotter(paths=[path], title="RP PulSeq based Output", save=save, labelarray=["RF Pulse"])
+    TE = 10e-3
+    rf90duration = 50e-6
+    offset = 0.0
+    rf90duration2 = 100e-6
+    _, id = ideal(TE=TE, step=step, rf90duration=rf90duration, offset=offset)
+    x, id2 = ideal(TE=TE, step=step, rf90duration=rf90duration2, offset=offset)
+    OCRAideal = np.concatenate((id[0:int(len(id)/2)], id2[int(len(id)/2)::]))
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/22042021RPOCRABased/RefCurve_2021-04-22_0_143403"
+    #Plotter(paths=[path], title="RP Ocra based Output", save=save, labelarray=["Output RP", "ideal"], multiply=[1, 0.4], extraData=[x[0:len(OCRAideal)], OCRAideal])
 
-    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/19052021GPAFHDO/Channel1/te12ms/RefCurve_2021-05-19_0_152231"
-    #Plotter(paths=[path], title="Scanner Output Timing TE 12", save=save, labelarray=["RF Pulse", "Gradient Pulse"])
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/19052021GPAFHDO/Channel1/te12ms/RefCurve_2021-05-19_0_152231"
+    #Plotter(paths=[path], title="Scanner Output Timing TE 12", save=save, labelarray=["Output \nTR Switch", "Gradient Pulse"])
 
-    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/19052021GPAFHDO/Channel1/te6ms/RefCurve_2021-05-19_0_155239"
-    #Plotter(paths=[path], title="Scanner Output Timing TE 6", save=save, labelarray=["RF Pulse", "Gradient Pulse"])
+    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/19052021GPAFHDO/Channel1/te6ms/RefCurve_2021-05-19_0_155239"
+    #Plotter(paths=[path], title="Scanner Output Timing TE 6", save=save, labelarray=["Output \nTR Switch", "Gradient Pulse"], extraData=ideal(TE=TE, step=step, rf90duration=rf90duration, offset=offset))
 
     freqLim = (0, 6e+6)
-    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
+    path ="/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
     #FFTPlot(path=path, title="FFT spike gate pulse", xlim=(-0.02e-3,0.04e-3), save=save, freqLim=freqLim)
 
+    TE = 1
+    rf90duration = 4e-3
+    offset = 0.1e-3
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/20052021GPAFHDO/Channel2/amplitude6.15384615A/RefCurve_2021-05-20_0_142303"
+    #Plotter(paths=[path], title="GPA FHDO output", save=save, labelarray=["GPA Output", "ideal"], multiply=(1, 0.615384615), extraData=ideal(TE=TE, step=step, rf90duration=rf90duration, offset=offset))
 
 
 
