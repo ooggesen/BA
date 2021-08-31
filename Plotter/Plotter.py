@@ -235,7 +235,7 @@ def Autoplot(path, titledict = None):
         Plotter([path], title, True,)
 
 
-def FFTPlot(path, title=None, xlim=None, save=False, freqLim=None):
+def FFTPlot(path, title=None, xlim=None, save=False, freqLim=None, Tmin = None):
     """Plots a FFT from the data in given path."""
     data, status = extractData(path)
 
@@ -245,9 +245,9 @@ def FFTPlot(path, title=None, xlim=None, save=False, freqLim=None):
     else:
         data = data[0]  #TODO adapt for multiinput signals
         step = (status["HardwareXStop"] - status["HardwareXStart"]) / len(data)
-    Tmax=step
+    Tmin=0.8*step
 
-    mag, freq = FFT(data, step, Tmax)
+    mag, freq = FFT(data, step, Tmin)
     data = None
 
     for i in range(len(freq)):
@@ -835,6 +835,11 @@ def plotMeasurementsWithUncertainty(data, lastKey=""):
         if len(X)!=0 and len(Y)!=0:
             X = bubblesort(X)
             Y = bubblesort(Y)
+            y = 0.5*np.array(X)
+            diff = 0.0
+            for i in range(len(X)):
+                diff += abs(y[i]-Y[i])
+            diff = diff/len(X)
             x = np.linspace(X[0], X[-1], 100)
             y = 1/2*x
             plot([x,X], [y,Y], "RF Amplifier Linearity", xlabel="Input voltagein mV", ylabel="Output voltage in V", save=True, labelarray=["ideal", "measured"])
@@ -998,24 +1003,22 @@ if __name__ == '__main__':
 
     curr_path = os.path.dirname(__file__)   #returns the current path of the python skript
     curr_path = os.path.dirname(curr_path)  # ".." Path to all the measurements
-    #curr_path = curr_path + "/22042021TRSwitchCoilToRx"
+    curr_path = curr_path + "/NeueMessungenAbRFAmp/27052021TRSwitch"
     #Autoplot(curr_path, titledict = titledict)
     #measureFreqAuto(path=curr_path)
     #measureAmpAuto(path=curr_path)
     #measureTimingAuto(curr_path)
-    data = readValuesFromTxtAuto(path=curr_path)
-    plotMeasurementsWithUncertainty(data=data)
+    plotMeasurementsWithUncertainty(data=readValuesFromTxtAuto(path=curr_path))
 
 
     save = False
 
 
     freqLim = (0e6, 1e6)
-    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/NeueMessungenAbRFAmp/27052021TRSwitch/RFAmplifierGaPulse/RefCurve_2021-05-27_0_143038"
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA//NeueMessungenAbRFAmp/27052021TRSwitch/amplitude251.95mV/RefCurve_2021-05-27_0_140507"
     xlim = None # (0.0, 0.00003)
     
-    #Plotter(paths=[path], title ="RF Amplifier With Gate Pulse", save=save, xlim=xlim, multiply=[10**(30/20), 1], labelarray=["RF Pulse", "Gate Pulse"])
-    #FFTPlot(path=path, xlim=xlim, save=save, freqLim=freqLim)
+    #Plotter(paths=[path], title ="TR Switch Output", save=save, xlim=xlim, multiply=[10**(30/20)], labelarray=["Ouput \n TR switch"])
 
     step = 2e-6
     rf90duration = 80e-6
@@ -1053,6 +1056,10 @@ if __name__ == '__main__':
     offset = 0.1e-3
     path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/20052021GPAFHDO/Channel2/amplitude6.15384615A/RefCurve_2021-05-20_0_142303"
     #Plotter(paths=[path], title="GPA FHDO output", save=save, labelarray=["GPA Output", "ideal"], multiply=(1, 0.615384615), extraData=ideal(TE=TE, step=step, rf90duration=rf90duration, offset=offset))
+
+    path = "/home/ole/StorageServer/Work/BachelorThesis/RedPitaya16BitUndMessaufbau/Messergebnisse/BA/22042021TRSwitchCoilToRx/HighRes.csv/RefCurve_2021-04-22_2_152031"
+    freqLim = (0, 25e6)
+    #FFTPlot(path=path, save=save, Tmin=0)
 
 
 
