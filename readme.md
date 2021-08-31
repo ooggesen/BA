@@ -13,3 +13,4 @@ The evalutation software is stored at ./Plotter/Plotter.py. All plots used in th
 
 In the Pulseq measurements the same MaRCoS system was used but the MaRCoS experiments were taken from Ruben Pellicer (https://github.com/RPellicer/marcos_experiments). The files can be found in the Rubens_MaRCoS_Experiments folder in the repository.
 
+All this information is also listed in the bachelorthesis at page 25.
