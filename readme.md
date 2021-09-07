@@ -1,7 +1,7 @@
 The evalutation software is stored at ./Plotter/Plotter.py. All plots used in the thesis are stored at ./Plotter/plots/*.
 
  In the Pulseq measurements the repositories of Benjamin Menkuec (https://github.com/catkira?tab=repositories), with the commits listed in the table below were used. 
- For general installation instructions refer to the github-wiki on Vlad Negnevitskys MaRCoS-Extras respository (https://github.com/vnegnev/marcos_extras/wiki).
+ For general installation instructions of the OCRA/MaRCoS system refer to the github-wiki on Vlad Negnevitskys MaRCoS-Extras respository (https://github.com/vnegnev/marcos_extras/wiki).
 
 |Repository           | Branch            | Commit                                  |
 |---------------------|-------------------|-----------------------------------------|
@@ -11,6 +11,6 @@ The evalutation software is stored at ./Plotter/Plotter.py. All plots used in th
 |OCRA                 | new_multiplier    | 88f468ada059f69ccb3cec28c638fa929822a889|
 |OCRA Pulseq          | grad-dev          | 5682400aa1f427abacc46f5ac8a961d6ab87c6d3|
 
-In the Pulseq measurements the same MaRCoS system was used but the MaRCoS experiments were taken from Ruben Pellicer (https://github.com/RPellicer/marcos_experiments). The files can be found in the Rubens_MaRCoS_Experiments folder in the repository.
+In the Pulseq measurements the same OCRA/MaRCoS system was used but the MaRCoS experiments were taken from the repositories of Ruben Pellicer (https://github.com/RPellicer/marcos_experiments). Since the used version is send per mail it has not a commit-hash, instead the files can be found in the Rubens_MaRCoS_Experiments folder in the repository.
 
 All this information is also listed in the bachelorthesis at page 25.
